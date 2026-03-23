@@ -19,6 +19,7 @@ resources
 | extend azureRegion = location
 | extend azureZone = strcat_array(zones, '"')
 | extend resourceId = tolower(tostring(id))
+| extend resourceName = name
 | extend diskName = name
 | extend diskType = sku.name
 | extend osDisk = properties.osType
