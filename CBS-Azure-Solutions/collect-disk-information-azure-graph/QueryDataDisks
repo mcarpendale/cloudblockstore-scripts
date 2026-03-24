@@ -11,8 +11,15 @@ resources
     | extend vnetName = tostring(split(vnetId, '/')[8])
     | project attachedVmId, vnetName
 ) on $left.vmId == $right.attachedVmId
+| join kind=leftouter (
+    resourcecontainers
+    | where type =~ 'microsoft.resources/subscriptions'
+    | project subscriptionName = name, subscriptionId
+) on subscriptionId
 | extend azureRegion = location
 | extend azureZone = strcat_array(zones, '"')
+| extend resourceId = tolower(tostring(id))
+| extend resourceName = name
 | extend diskName = name
 | extend diskType = sku.name
 | extend osDisk = properties.osType
@@ -23,4 +30,4 @@ resources
 | extend createdDateTime = properties.timeCreated
 | where isnull(properties.osType)
 | summarize arg_min(diskName, *) by diskName
-| project subscriptionId, resourceGroup, VmName, diskName, diskType, osDisk, diskSize, diskBW, diskIOPS, diskState, createdDateTime, azureRegion, azureZone, vnetName
+| project azureRegion, azureZone, subscriptionName, resourceGroup, resourceId, resourceName, diskName, diskType, osDisk, diskSize, diskBW, diskIOPS, diskState, managedBy, createdDateTime, VmName, vnetName
