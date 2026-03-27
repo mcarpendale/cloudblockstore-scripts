@@ -1,20 +1,20 @@
 <#
     paz-checklist.ps1 -
-    Version:        3.1.1
-    Author:         Vaclav Jirovsky, Adam Mazouz, David Stamen @ Pure Storage
+    Version:        3.1.2
+    Author:         Vaclav Jirovsky, Adam Mazouz, David Stamen @ Everpure
 .SYNOPSIS
-    Checking if the prerequisites required for deploying Cloud Block Store are met before create the array on Azure.
+    Checking if the prerequisites required for deploying Everpure Cloud Dedicated are met before create the array on Azure.
 .DESCRIPTION
     This script will validate and verify the following:
-	- Check if the region where VNET is created is supported for CBS deployments.
-	- Check if the region has enough Ebdsv5 or DSv3 Family vCPU to deploy Cloud Block Store.
+	- Check if the region where VNET is created is supported for Everpure Cloud Dedicated deployments.
+	- Check if the region has enough Ebdsv5 or DSv3 Family vCPU to deploy Everpure Cloud Dedicated.
 	- Check if the System Subnet has outbound internet Access.
     - Check if the Signed In User has the required Azure Role Assignment.
 .INPUTS
     - Azure Subscription Id.
-    - Pure Cloud Block Store Model (V20MUR1, V10MUR1, V10MP2R2, V20MP2R2, V50MP2R2).
-    - Azure Virtual Network, where CBS subnets are located.
-    - Azure Subnet, designated for CBS System subnet.
+    - Pure Everpure Cloud Dedicated Model (V20MUR1, V10MUR1, V10MP2R2, V20MP2R2, V50MP2R2).
+    - Azure Virtual Network, where Everpure Cloud Dedicated subnets are located.
+    - Azure Subnet, designated for Everpure Cloud Dedicated System subnet.
     - (optional) Tags to be assigned for a temporary VM created for connectivity test
 .OUTPUTS
     Print out the on console the validation results.
@@ -23,20 +23,6 @@
         & paz-checklist.ps1
     Option 2: Or use your local machine to install Azure Powershell Module and make sure to login to Azure first
         Connect-AzAccount
-.CHANGELOG
-    09/25/25 3.1.1 Bug Fixes
-    09/18/25 3.1.0 Updated to add Support for V50MP2R2 Model
-    09/02/25  3.0.9 Updated to check for Azure VM Regional and Zonal Restrictions
-    08/20/25  3.0.8 Updated for Better Error Handling and Update fo VM Images
-    01/07/25  3.0.7 From v6.8.2 is not used CosmosDB anymore
-    10/24/24  3.0.6 Disable Storage Account Creation for Boot Diagnostics
-    8/30/2024 3.0.5 Bug Fixes for V10MP2R2
-    7/15/2024 3.0.4 Updated Region Support, V10MP2R2
-    7/11/2024 3.0.3 Added Microsoft.Storage Endpoint, Fixed naming of the LB
-    6/6/2024  3.0.2 Added ability to modify VM Size and VM OS types
-    3/15/2024 3.0.1 Improved test for outbound connectivity (to deploy a test load balancer)
-    3/12/2024 3.0.0 Script refactored, to provide a full report of the readiness of the environment for CBS deployment
-    1/26/2024 2.0.1 Adding V20MP2R2 and PremiumV2 SSD support to the script
 #>
 <#
 .DISCLAIMER
@@ -52,16 +38,16 @@ param (
   [string]
   $subscriptionId,
 
-  [Parameter(Mandatory = $true, HelpMessage = 'Enter CBS Model (V10MUR1, V20MUR1, V10MP2R2, V20MP2R2, V50MP2R2)')]
+  [Parameter(Mandatory = $true, HelpMessage = 'Enter Everpure Cloud Dedicated Model (V10MUR1, V20MUR1, V10MP2R2, V20MP2R2, V50MP2R2)')]
   [ValidateNotNullOrEmpty()]
   [ValidateSet('V10MUR1', 'V20MUR1', 'V10MP2R2', 'V20MP2R2','V50MP2R2')]
   [string]
-  $cbsModel,
+  $Model,
 
   [Parameter(Mandatory = $true, HelpMessage = 'Enter your vNET name')]
   [ValidateNotNullOrEmpty()]
   [string]
-  $cbsVNETName,
+  $VNETName,
 
   [Parameter(Mandatory = $false, HelpMessage = "Enter your subnet name within vNET used for 'system'")]
   [ValidateNotNullOrEmpty()]
@@ -71,7 +57,7 @@ param (
   [Parameter(Mandatory = $false, HelpMessage = 'Enter name for temporary VM created for connectivity tests')]
   [ValidateNotNullOrEmpty()]
   [string]
-  $tempVmName = 'CBS-TestVM',
+  $tempVmName = 'Everpure Cloud Dedicated-TestVM',
 
   [Parameter(Mandatory = $false, HelpMessage = "List of tags to be assigned to the temporary VM created for connectivity tests, required by your Azure landing zone (e.g. @{'tag1'='value1';'tag2'='value2'})")]
   [hashtable]
@@ -94,7 +80,7 @@ if ($tempVmOS -in $AcceptableOS) {
   Exit
 }
 
-if ($cbsModel -eq 'V10MP2R2' -or $cbsModel -eq 'V20MP2R2') {
+if ($Model-eq 'V10MP2R2' -or $Model-eq 'V20MP2R2') {
   $supportedRegions =
   'australiaeast',
   'brazilsouth',
@@ -124,8 +110,14 @@ if ($cbsModel -eq 'V10MP2R2' -or $cbsModel -eq 'V20MP2R2') {
   'uksouth',
   'westeurope',
   'westus2',
-  'westus3'
-} elseif ($cbsModel -eq 'V10MUR1' -or $cbsModel -eq 'V20MUR1') {
+  'westus3',
+  'westus',
+  'northcentralus',
+  'canadaeast',
+  'norwaywest',
+  'ukwest',
+  'westcentralus'
+} elseif ($Model-eq 'V10MUR1' -or $Model-eq 'V20MUR1') {
   $supportedRegions =
   'australiacentral',
   'australiaeast',
@@ -161,33 +153,36 @@ if ($cbsModel -eq 'V10MP2R2' -or $cbsModel -eq 'V20MP2R2') {
   'westus2',
   'westus3'
 }
-elseif ($cbsModel -eq 'V50MP2R2') {
+elseif ($Model-eq 'V50MP2R2') {
   $supportedRegions =
   'eastus2',
   'centralus',
-  'eastus'
+  'eastus',
+  'canadaeast',
+  'canadacentral'
 }
 else {
-  Write-Error 'Unknown CBS Model selected. Please select one of the following: V10MUR1, V20MUR1, V10MP2R2, V20MP2R2';
+  Write-Error 'Unknown Everpure Cloud Dedicated Model selected. Please select one of the following: V10MUR1, V20MUR1, V10MP2R2, V20MP2R2';
   exit;
 }
 
-$CLI_VERSION = '3.1.1'
+$CLI_VERSION = '3.1.2'
 
-Write-Host -ForegroundColor DarkRed -BackgroundColor Black @"
- _____                   _____ _
-|  __ \                 / ____| |
-| |__) |   _ _ __ ___  | (___ | |_ ___  _ __ __ _  __ _  ___
-|  ___/ | | | '__/ _ \  \___ \| __/ _ \| '__/ _`  |/ _`  |/ _ \
-| |   | |_| | | |  __/  ____) | || (_) | | | (_| | (_| |  __/
-|_|    \__,_|_|  \___| |_____/ \__\___/|_|  \__,_|\__, |\___|
-                                                   __/ /
+Write-Host -ForegroundColor DarkRed @"
+  ______
+ |  ____|
+ | |__ __   _____ _ __ _ __  _   _ _ __ ___
+ |  __|\ \ / / _ \ '__| '_ \| | | | '__/ _ \
+ | |____\ V /  __/ |  | |_) | |_| | | |  __/
+ |______|\_/ \___|_|  | .__/ \__,_|_|  \___|
+                      | |
+                      |_|
 "@
 
 Write-Host  @"
 ------------------------------------------------------------
-    Pure Cloud Block Store - Pre-Deployment Check Report
-                (c) 2025 Pure Storage
+    Everpure Cloud Dedicated - Pre-Deployment Check Report
+                (c) 2026 Everpure, Inc
                         v$CLI_VERSION
 ------------------------------------------------------------
 "@
@@ -212,12 +207,12 @@ try {
   # Resource_Group
   Write-Progress 'Checking vNET presence' -PercentComplete 0
 
-  $rg = (Get-AzVirtualNetwork -Name $cbsVNETName).ResourceGroupName
+  $rg = (Get-AzVirtualNetwork -Name $VNETName).ResourceGroupName
   if ($null -eq $rg) {
     $finalReportOutput += [pscustomobject]@{
       TestName = 'vNET existence'
       Result   = 'FAILED'
-      Details  = "vNET '$cbsVNETName' WAS NOT found"
+      Details  = "vNET '$VNETName' WAS NOT found"
     };
 
     exit;
@@ -227,12 +222,12 @@ try {
   $finalReportOutput += [pscustomobject]@{
     TestName = 'vNET existence'
     Result   = 'OK'
-    Details  = "vNET '$cbsVNETName' was found in RG '$rg'"
+    Details  = "vNET '$VNETName' was found in RG '$rg'"
   };
 
   Write-Progress 'Checking subnet presence' -PercentComplete 0
 
-  $PSvnet = Get-AzVirtualNetwork -Name $cbsVNETName
+  $PSvnet = Get-AzVirtualNetwork -Name $VNETName
   $PSSubnet = Get-AzVirtualNetworkSubnetConfig -Name $vnetSystemSubnetName -VirtualNetwork $PSvnet
   if ($null -eq $PSSubnet) {
     $finalReportOutput += [pscustomobject]@{
@@ -253,7 +248,7 @@ try {
 
   Write-Progress 'Checking region support' -PercentComplete 0
   # REGION
-  $region = (Get-AzVirtualNetwork -Name  $cbsVNETName).Location
+  $region = (Get-AzVirtualNetwork -Name  $VNETName).Location
 
   ###################
   ## Region Supported ##
@@ -262,13 +257,13 @@ try {
     $finalReportOutput += [pscustomobject]@{
       TestName = 'Region support'
       Result   = 'OK'
-      Details  = "Region '$region' is declared as supported for deploying a $cbsModel"
+      Details  = "Region '$region' is declared as supported for deploying a $Model"
     };
   } else {
     $finalReportOutput += [pscustomobject]@{
       TestName = 'Region support'
       Result   = 'FAILED'
-      Details  = "Region '$region' IS declared as NOT supported for deploying a $cbsModel"
+      Details  = "Region '$region' IS declared as NOT supported for deploying a $Model"
     };
       exit;
   }
@@ -279,32 +274,32 @@ try {
   ##  vCPU Limits  ##
   ###################
 
-  $cbsVCPU = switch ($cbsModel) {
+  $VCPU = switch ($Model) {
     'V10MUR1' { 64 }
     'V20MUR1' { 128 }
     'V10MP2R2' { 32 }
     'V20MP2R2' { 64 }
     'V50MP2R2' { 256 }
-    Default { Write-Host 'Invalid CBS Model selected.'; exit }
+    Default { Write-Host 'Invalid Everpure Cloud Dedicated Model selected.'; exit }
   }
 
-  $vmSize = switch ($cbsModel) {
+  $vmSize = switch ($Model) {
     'V10MUR1' { 'Standard_D32s_v3' }
     'V20MUR1' { 'Standard_D64s_v3' }
     'V10MP2R2' { 'Standard_E16bds_v5' }
     'V20MP2R2' { 'Standard_E32bds_v5' }
     'V50MP2R2' { 'Standard_D128ds_v6' }
-    Default { Write-Host 'Invalid CBS Model selected.'; exit }
+    Default { Write-Host 'Invalid Everpure Cloud Dedicated Model selected.'; exit }
   }
 
-  $diskType = switch ($cbsModel) {
+  $diskType = switch ($Model) {
     'V10MUR1' { 'UltraSSD_LRS' }
     'V20MUR1' { 'UltraSSD_LRS' }
     'V10MP2R2' { 'PremiumV2_LRS' }
     'V20MP2R2' { 'PremiumV2_LRS' }
     'V50MP2R2' { 'PremiumV2_LRS' }
 
-    Default { Write-Host 'Invalid CBS Model selected.'; exit }
+    Default { Write-Host 'Invalid Everpure Cloud Dedicated Model selected.'; exit }
   }
   ##################################
   ##  Azure VM Stuff Availability ##
@@ -322,18 +317,18 @@ try {
   Write-Progress 'Checking vCPU limits' -PercentComplete 50
   $limit = Get-AzVMUsage -Location $region | Where-Object { $_.Name.Value -eq $VMFamily } | Select-Object -ExpandProperty Limit
 
-  $vCPUAfterDeploy = $limit - ($cbsVCPU + $currentLimit)
-  if (($cbsVCPU + $currentLimit) -le $limit) {
+  $vCPUAfterDeploy = $limit - ($VCPU + $currentLimit)
+  if (($VCPU + $currentLimit) -le $limit) {
     $finalReportOutput += [pscustomobject]@{
       TestName = 'vCPUs availability (quota)'
       Result   = 'OK'
-      Details  = "There is enough $vmSize vCPUs for deploying a $cbsModel ($vCPUAfterDeploy after deployment, currently used $currentLimit, total limit $limit)"
+      Details  = "There is enough $vmSize vCPUs for deploying a $Model($vCPUAfterDeploy after deployment, currently used $currentLimit, total limit $limit)"
     };
   } else {
     $finalReportOutput += [pscustomobject]@{
       TestName = 'vCPUs availability (quota)'
       Result   = 'FAILED'
-      Details  = "There IS NOT enough $vmSize vCPUs for deploying a $cbsModel ($vCPUAfterDeploy after deployment, currently used $currentLimit, total limit $limit)"
+      Details  = "There IS NOT enough $vmSize vCPUs for deploying a $Model($vCPUAfterDeploy after deployment, currently used $currentLimit, total limit $limit)"
     };
     exit;
   }
@@ -381,14 +376,14 @@ $zones = Get-AzComputeResourceSku -Location $region | Where-Object {$_.ResourceT
     $finalReportOutput += [pscustomobject]@{
       TestName = 'Managed Disks availability'
       Result   = 'OK'
-      Details  = "The disk SKU '$diskType' is available in region '$region' in availability zones '$zones' for deploying a $cbsModel"
+      Details  = "The disk SKU '$diskType' is available in region '$region' in availability zones '$zones' for deploying a $Model"
     };
   } else {
 
     $finalReportOutput += [pscustomobject]@{
       TestName = 'Managed Disks availability'
       Result   = 'FAILED'
-      Details  = "The disk SKU '$diskType' is NOT available in region '$region' for deploying a $cbsModel"
+      Details  = "The disk SKU '$diskType' is NOT available in region '$region' for deploying a $Model"
     };
   }
 
@@ -481,7 +476,7 @@ $zones = Get-AzComputeResourceSku -Location $region | Where-Object {$_.ResourceT
   # 1/ Create Test_VM in System Subnet
   ####################
 
-  $region = (Get-AzVirtualNetwork -Name  $cbsVNETName).Location
+  $region = (Get-AzVirtualNetwork -Name  $VNETName).Location
 
   Write-Progress 'Creating a temporary test loadbalancer in System subnet' -PercentComplete 0
 

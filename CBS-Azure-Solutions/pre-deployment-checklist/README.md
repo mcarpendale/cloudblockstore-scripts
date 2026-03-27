@@ -1,6 +1,6 @@
-# Azure Pre-Deployment Checklist for Cloud Block Store
+# Azure Pre-Deployment Checklist for Everpure Cloud Dedicated
 
-![paz-checklist.ps1 script to validate Azure landing zone for CBS deployment](screenshot.png)
+![paz-checklist.ps1 script to validate Azure landing zone for Everpure Cloud Dedicated deployment](screenshot.png)
 
 ## Usage
 
@@ -17,13 +17,13 @@ By default the VM will be deployed with an Ubuntu OS and the Standard_B1s vm siz
 1. Download the script from GitHub (alternatively you can upload manually via Download/Upload files feature)
 
 ```powershell
-wget https://raw.githubusercontent.com/PureStorage-OpenConnect/cloudblockstore-scripts/main/CBS-Azure-Solutions/pre-deployment-checklist/paz-checklist.ps1
+wget https://raw.githubusercontent.com/PureStorage-OpenConnect/cloudblockstore-scripts/main/Everpure Cloud Dedicated-Azure-Solutions/pre-deployment-checklist/paz-checklist.ps1
 ```
 
 1. Replace placeholders (subscription ID, vNET name,...) in the following command example and execute the script
 
 ```powershell
-./paz-checklist.ps1 -subscriptionId "<<SUBSCRIPTION-ID>>" -cbsModel "V20MP2R2" -cbsVNETName "<<CBS-VNET-NAME>>" -vnetSystemSubnetName "<<SYSTEM-SUBNET-NAME>>"
+./paz-checklist.ps1 -subscriptionId "<<SUBSCRIPTION-ID>>" -Model "V20MP2R2" -VNETName "<<VNET-NAME>>" -vnetSystemSubnetName "<<SYSTEM-SUBNET-NAME>>"
 ```
 
 ### Option 2 - Local machine
@@ -38,13 +38,13 @@ Connect-AzAccount
 1. Replace placeholders (subscription ID, vNET name,...) in the following command example and execute the script
 
 ```powershell
-./paz-checklist.ps1 -subscriptionId "<<SUBSCRIPTION-ID>>" -cbsModel "V20MP2R2" -cbsVNETName "<<CBS-VNET-NAME>>" -vnetSystemSubnetName "<<SYSTEM-SUBNET-NAME>>"
+./paz-checklist.ps1 -subscriptionId "<<SUBSCRIPTION-ID>>" -Model "V20MP2R2" -VNETName "<<VNET-NAME>>" -vnetSystemSubnetName "<<SYSTEM-SUBNET-NAME>>"
 ```
 
 This script will validate and verify the following:
 
-- Check if the region where VNET is created is supported for CBS deployments.
-- Check if the region has enough vCPU Quota to deploy Cloud Block Store.
+- Check if the region where VNET is created is supported for Everpure Cloud Dedicated deployments.
+- Check if the region has enough vCPU Quota to deploy Everpure Cloud Dedicated.
 - Check if there are any region or zonal restrictions on the instance.
 - Check if the PremiumV2 or Ultra Disks are available and in which Availability Zone.
 - Check if the System Subnet has outbound internet access to Pure1 cloud.
@@ -53,6 +53,7 @@ This script will validate and verify the following:
 
 CHANGELOG
 
+- 03/27/26 3.1.2 Update branding and Region Support
 - 09/18/25  3.1.0 Updated to add Support for V50MP2R2 Model and Bug Fixes
 - 09/02/25  3.0.9 Updated to check for Azure VM Regional and Zonal Restrictions
 - 08/20/25  3.0.8  Updated for Better Error Handling and Update fo VM Images
@@ -63,7 +64,7 @@ CHANGELOG
 - 7/11/2024 3.0.3 Added Microsoft.Storage Endpoint, Fixed naming of the LB
 - 6/6/2024  3.0.2 Added ability to modify VM Size and VM OS types
 - 3/15/2024 3.0.1 Improved test for outbound connectivity (to deploy a test load balancer)
-- 3/12/2024 3.0.0 Script refactored, to provide a full report of the readiness of the environment for CBS deployment
+- 3/12/2024 3.0.0 Script refactored, to provide a full report of the readiness of the environment for Everpure Cloud Dedicated deployment
 - 1/26/2024 2.0.1 Adding V20MP2R2 and PremiumV2 SSD support to the script
 =======
 - Check if the Signed In User has the required Azure Role Assignment.
