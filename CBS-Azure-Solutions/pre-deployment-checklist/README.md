@@ -17,7 +17,7 @@ By default the VM will be deployed with an Ubuntu OS and the Standard_B1s vm siz
 1. Download the script from GitHub (alternatively you can upload manually via Download/Upload files feature)
 
 ```powershell
-wget https://raw.githubusercontent.com/PureStorage-OpenConnect/cloudblockstore-scripts/main/Everpure Cloud Dedicated-Azure-Solutions/pre-deployment-checklist/paz-checklist.ps1
+wget https://raw.githubusercontent.com/PureStorage-OpenConnect/purestoragecloud-scripts/main/CBS-Azure-Solutions/pre-deployment-checklist/paz-checklist.ps1
 ```
 
 1. Replace placeholders (subscription ID, vNET name,...) in the following command example and execute the script
